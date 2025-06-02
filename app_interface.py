@@ -33,5 +33,9 @@ class AppInterface:
         self.input.grid(column=0, row=6, columnspan=3, sticky="ew")
 
     def start_game(self):
-        pass
+        self._create_words_list()
+
+    def _create_words_list(self):
+        self.words_list = utilities.generate_words()
+        self.pattern.config(text=' '.join(self.words_list))
 
