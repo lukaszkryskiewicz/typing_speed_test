@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import messagebox
 
 import utilities
 from timer import Timer
@@ -39,7 +40,7 @@ class AppInterface:
         self.pattern.tag_config('correct_word', background='blue')
         self.pattern.tag_config('wrong_word', background='yellow')
 
-        self.input = tk.Text(height=4, padx=20, pady=20, spacing1=1)
+        self.input = tk.Text(height=4, padx=20, pady=20, spacing1=1, state='disabled')
         self.input.grid(column=0, row=6, columnspan=3, sticky="ew")
 
 
@@ -47,6 +48,13 @@ class AppInterface:
         if not self.timer.timer:
             self._create_words_list()
             self.start_timer()
+            self.input.config(state='normal')
+            self.input.focus()
+
+    def end_game(self):
+        self.input.config(state='disabled')
+        message = f'Final score: {self.CPM} CPM, {self.CPM // 5} WPM'
+        messagebox.showinfo(title='Game finished!', message=message)
 
     def _create_words_list(self):
         self.words_list = utilities.generate_words()
@@ -54,10 +62,13 @@ class AppInterface:
         self.pattern.config(state='disabled')
 
     def start_timer(self):
-        self.timer.run_timer(10, self.time_label)
+        self.timer.run_timer(10, self.time_label, self.end_game)
         self.time_left = self.timer.time_left
 
     def key_handler(self, event):
+        if self.input['state'] == 'disabled':
+            return 'break'
+
         # get previous character from input
         previous_char = self.input.get("end-2c", "end-1c")
 
