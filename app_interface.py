@@ -10,7 +10,7 @@ class AppInterface:
         self.window.title('Speed typing app')
         self.window.config(padx=20, pady=20)
 
-        self.score = 0
+        self.CPM = 0
         self.time_left = '00'
         self.words_list = []
         self.user_text = ''
@@ -23,7 +23,8 @@ class AppInterface:
     def _create_widgets(self):
         tk.Label(text='Check how fast you are!', font=('Arial', 32)).grid(column=1, row=0, pady=20)
 
-        tk.Label(text=f'Score: {self.score}', font=('Arial', 26)).grid(column=0, row=1, pady=20)
+        self.CPM_label = tk.Label(text=f'Score: {self.CPM} CPM', font=('Arial', 26))
+        self.CPM_label.grid(column=0, row=1, pady=20)
 
         self.time_label = tk.Label(text=f'Time left: {self.time_left}', font=('Arial', 26))
         self.time_label.grid(column=2, row=1, pady=20)
@@ -32,13 +33,14 @@ class AppInterface:
 
         self.pattern = tk.Text(wrap='word', bg='grey', fg='white', padx=20, pady=20, height=4)
         self.pattern.grid(column=0, row=3, columnspan=3, rowspan=3, sticky="ew")
-        self.pattern.tag_config('correct', foreground='green')
-        self.pattern.tag_config('wrong', foreground='red')
+        self.pattern.tag_config('correct_letter', foreground='green')
+        self.pattern.tag_config('wrong_letter', foreground='red')
         self.pattern.tag_config('raw', foreground='white')
+        self.pattern.tag_config('correct_word', background='blue')
+        self.pattern.tag_config('wrong_word', background='yellow')
 
         self.input = tk.Text(height=4, padx=20, pady=20, spacing1=1)
         self.input.grid(column=0, row=6, columnspan=3, sticky="ew")
-
 
 
     def start_game(self):
@@ -56,13 +58,28 @@ class AppInterface:
         self.time_left = self.timer.time_left
 
     def key_handler(self, event):
-        if not event.char.isalpha() and event.char == " " and event.keysym == 'BackSpace':
-            return 'break'
-        #fires _process_text after character is entered in input
-        self.input.after_idle(self._process_text, event.keysym)
+        # get previous character from input
+        previous_char = self.input.get("end-2c", "end-1c")
 
-    def _process_text(self, key):
-        self.user_text = self.input.get("1.0", "end-1c")  # bez końcowego \n
-        utilities.compare_input(self.pattern, self.user_text, key, self.words_list)
+        # check if new character is a letter, space or backspace
+        if not (event.char.isalpha() or event.char == " " or event.keysym == 'BackSpace'):
+            return 'break'
+
+        # avoid double-spacing
+        if event.char == " " and previous_char == " ":
+            return 'break'
+
+        #fires _process_text after character is entered in input
+        self.input.after_idle(self._process_text, event.keysym, previous_char)
+
+    def _process_text(self, key, previous_char):
+        self.user_text = self.input.get("1.0", "end-1c")  # without trailing \n
+
+        utilities.compare_input(self.pattern, self.user_text, key, self.words_list, previous_char, self.update_cpm)
+
+    def update_cpm(self, cpm):
+        print(cpm, self.CPM)
+        self.CPM = self.CPM + cpm
+        self.CPM_label.config(text=f'Score: {self.CPM} CPM')
 
 
