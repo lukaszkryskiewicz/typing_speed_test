@@ -16,3 +16,8 @@ class Timer:
             self.window.after_cancel(self.timer)
             self.timer = None
             end_game()
+
+    def stop_timer(self, end_game):
+        self.window.after_cancel(self.timer)
+        self.timer = None
+        end_game()

@@ -16,6 +16,21 @@ def generate_words():
 
     return response.json()
 
+def get_highscore():
+    with open('highscore.txt') as file:
+        highscore = file.read()
+    return int(highscore) if highscore else 0
+
+def update_highscore(new_highscore):
+    with open('highscore.txt', 'w') as file:
+        if new_highscore < 10:
+            result = f'00{new_highscore}'
+        elif new_highscore < 100:
+            result = f'0{new_highscore}'
+        else:
+            result = f'{new_highscore}'
+        file.write(result)
+
 def compare_input(pattern, user_input, key, words_list, previous_char, update_cpm):
     user_input_list = user_input.split(' ')
     current_word_index = len(user_input_list) - 1

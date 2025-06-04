@@ -11,10 +11,11 @@ class AppInterface:
         self.window.title('Speed typing app')
         self.window.config(padx=20, pady=20)
 
-        self.CPM = 0
+        self.CPM = 000
         self.time_left = '00'
         self.words_list = []
         self.user_text = ''
+        self.current_highscore = utilities.get_highscore()
 
         self._create_widgets()
         self.timer = Timer(self.window)
@@ -24,13 +25,18 @@ class AppInterface:
     def _create_widgets(self):
         tk.Label(text='Check how fast you are!', font=('Arial', 32)).grid(column=1, row=0, pady=20)
 
-        self.CPM_label = tk.Label(text=f'Score: {self.CPM} CPM', font=('Arial', 26))
+        self.CPM_label = tk.Label(text=f'Score: 00{self.CPM} CPM', font=('Arial', 26))
         self.CPM_label.grid(column=0, row=1, pady=20)
 
         self.time_label = tk.Label(text=f'Time left: {self.time_left}', font=('Arial', 26))
         self.time_label.grid(column=2, row=1, pady=20)
 
-        tk.Button(text='Start', font=('Arial', 26), command=self.start_game).grid(column=1, row=2, pady=20)
+        self.highscore_label = tk.Label(text=f'Highscore: {self.current_highscore} CPM', font=('Arial', 26))
+        self.highscore_label.grid(column=1, row=1)
+
+        self.start_stop_button = tk.Button(text='Start', font=('Arial', 26), command=self.start_stop_game)
+        self.start_stop_button.status = 'start'
+        self.start_stop_button.grid(column=1, row=2, pady=20)
 
         self.pattern = tk.Text(wrap='word', bg='grey', fg='white', padx=20, pady=20, height=4)
         self.pattern.grid(column=0, row=3, columnspan=3, rowspan=3, sticky="ew")
@@ -44,17 +50,47 @@ class AppInterface:
         self.input.grid(column=0, row=6, columnspan=3, sticky="ew")
 
 
-    def start_game(self):
-        if not self.timer.timer:
+    def start_stop_game(self):
+        if not self.timer.timer and self.start_stop_button.status == 'start':
+            self._reset_widgets()
             self._create_words_list()
             self.start_timer()
-            self.input.config(state='normal')
             self.input.focus()
+            self.start_stop_button.config(text='Stop')
+            self.start_stop_button.status = 'stop'
+
+        elif self.start_stop_button.status == 'stop':
+            self.timer.stop_timer(self.end_game)
+
 
     def end_game(self):
-        self.input.config(state='disabled')
         message = f'Final score: {self.CPM} CPM, {self.CPM // 5} WPM'
         messagebox.showinfo(title='Game finished!', message=message)
+        self.input.config(state='disabled')
+        self.start_stop_button.config(text='Start')
+        self.start_stop_button.status = 'start'
+
+        if self.CPM > self.current_highscore:
+            self.current_highscore = self.CPM
+            self.highscore_label.config(text=f'Highscore: {self.current_highscore} CPM')
+            utilities.update_highscore(self.current_highscore)
+
+    def _reset_widgets(self):
+        self.CPM = 0
+        self.CPM_label.config(text=f'Score: 00{self.CPM} CPM')
+
+        self._remove_patterns()
+        self.pattern.config(state='normal')
+        self.pattern.delete('1.0', 'end')
+
+        self.input.config(state='normal')
+        self.input.delete('1.0', 'end')
+
+
+    def _remove_patterns(self):
+        patterns = ['raw', 'correct_letter', 'wrong_letter', 'correct_word', 'wrong_word']
+        for pattern in patterns:
+            self.pattern.tag_remove(pattern, '1.0', 'end')
 
     def _create_words_list(self):
         self.words_list = utilities.generate_words()
@@ -89,8 +125,12 @@ class AppInterface:
         utilities.compare_input(self.pattern, self.user_text, key, self.words_list, previous_char, self.update_cpm)
 
     def update_cpm(self, cpm):
-        print(cpm, self.CPM)
         self.CPM = self.CPM + cpm
-        self.CPM_label.config(text=f'Score: {self.CPM} CPM')
-
+        if self.CPM < 10:
+            result = f'00{self.CPM}'
+        elif self.CPM < 100:
+            result = f'0{self.CPM}'
+        else:
+            result = f'{self.CPM}'
+        self.CPM_label.config(text=f'Score: {result} CPM')
 
